@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サンアイ商事 タイムカード</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3348;
+    --accent: #4ade80;
+    --accent2: #60a5fa;
+    --danger: #f87171;
+    --text: #e8eaf0;
+    --text2: #8b90a8;
+    --text3: #555a72;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== STAFF SCREEN ===== */
+  .staff-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .staff-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .company-name {
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+
+  .app-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .staff-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .select-wrapper {
+    position: relative;
+  }
+
+  .select-wrapper select {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .select-wrapper select:focus {
+    border-color: var(--accent2);
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text2);
+    pointer-events: none;
+    font-size: 12px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .status-ok { background: rgba(74,222,128,0.1); color: #4ade80; }
+  .status-ng { background: rgba(248,113,113,0.1); color: #f87171; }
+  .status-wait { background: rgba(139,144,168,0.1); color: var(--text2); }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-ok .status-dot { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+  .status-ng .status-dot { background: #f87171; }
+  .status-wait .status-dot { background: var(--text3); }
+
+  .today-info {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .today-label {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+  }
+
+  .today-times {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .time-item { display: flex; flex-direction: column; gap: 2px; }
+  .time-item-label { font-size: 11px; color: var(--text2); }
+  .time-item-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .punch-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-in {
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: #0a1a0f;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-in:hover { background: #86efac; transform: translateY(-1px); }
+  .btn-in:active { transform: translateY(0); }
+  .btn-in:disabled { background: var(--border); color: var(--text3); cursor: not-allowed; transform: none; }
+
+  .btn-out {
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-out:hover { background: var(--surface2); }
+  .btn-out:disabled { color: var(--text3); cursor: not-allowed; }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 14px;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* ===== ADMIN SCREEN ===== */
+  .admin-screen {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+  }
+
+  .admin-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .admin-topbar-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-logout {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-logout:hover { background: var(--surface2); color: var(--text); }
+
+  .admin-content {
+    padding: 1.5rem;
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .metric-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filters select, .filters input {
+    padding: 7px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .btn-excel {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent2);
+    background: rgba(96,165,250,0.1);
+    color: var(--accent2);
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+
+  .btn-excel:hover { background: rgba(96,165,250,0.2); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .mono { font-family: 'DM Mono', monospace; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .badge-in { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge-out { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .badge-ot { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
+  .empty-row td {
+    text-align: center;
+    color: var(--text3);
+    padding: 2rem;
+  }
+
+  /* ===== LOGIN SCREEN ===== */
+  .login-screen {
+    min-height: 100vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .login-title {
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .login-card input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .login-card input:focus { border-color: var(--accent2); }
+
+  .btn-login {
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent2);
+    color: #0a0f1a;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-login:hover { background: #93c5fd; }
+
+  .login-error {
+    font-size: 12px;
+    color: var(--danger);
+    text-align: center;
+    display: none;
+  }
+
+  .login-hint {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+  }
+
+  /* ===== NAV ===== */
+  .nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 0.5rem 1rem;
+    gap: 4px;
+    z-index: 50;
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.15s;
+  }
+
+  .nav-btn.active { background: var(--surface2); color: var(--accent); }
+  .nav-icon { font-size: 18px; }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: var(--text2);
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .admin-content { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">読み込み中...</div>
+
+<!-- STAFF SCREEN -->
+<div class="staff-screen" id="staffScreen" style="display:none; padding-bottom: 80px;">
+  <div class="staff-header">
+    <div class="company-name">サンアイ商事</div>
+    <div class="app-title">タイムカード</div>
+  </div>
+  <div class="staff-card">
+    <div class="select-wrapper">
+      <select id="staffSelect" onchange="onNameChange()">
+        <option value="">名前を選んでください</option>
+        <option>田中 太郎</option>
+        <option>佐藤 花子</option>
+        <option>鈴木 一郎</option>
+        <option>高橋 美咲</option>
+        <option>伊藤 健二</option>
+        <option>渡辺 さゆり</option>
+        <option>山本 大輔</option>
+        <option>中村 由美</option>
+        <option>小林 正志</option>
+        <option>加藤 れな</option>
+      </select>
+      <span class="select-arrow">▼</span>
+    </div>
+
+    <div class="status-bar status-wait" id="statusBar">
+      <div class="status-dot"></div>
+      <span id="statusText">名前を選んでください</span>
+    </div>
+
+    <div class="today-info">
+      <div class="today-label">本日の記録</div>
+      <div class="today-times">
+        <div class="time-item">
+          <div class="time-item-label">出勤</div>
+          <div class="time-item-value mono" id="displayIn">--:--</div>
+        </div>
+        <div class="time-item">
+          <div class="time-item-label">退勤</div>
+          <div class="time-item-value mono" id="displayOut">--:--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="punch-buttons">
+      <button class="btn-in" id="btnIn" onclick="punch('in')" disabled>出勤する</button>
+      <button class="btn-out" id="btnOut" onclick="punch('out')" disabled>退勤する</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen" style="display:none;">
+  <div class="login-card">
+    <div class="login-title">管理者ログイン</div>
+    <input type="password" id="adminKeyInput" placeholder="管理者キーを入力"
+      onkeydown="if(event.key==='Enter') adminLogin()" />
+    <button class="btn-login" onclick="adminLogin()">ログイン</button>
+    <div class="login-error" id="loginError">キーが違います</div>
+    <div class="login-hint">※ 管理者キー: admin2024</div>
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div class="admin-screen" id="adminScreen">
+  <div class="admin-topbar">
+    <div class="admin-topbar-title">管理者画面</div>
+    <button class="btn-logout" onclick="adminLogout()">ログアウト</button>
+  </div>
+  <div class="admin-content">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">本日の出勤</div>
+        <div class="metric-value" id="metricToday">0</div>
+        <div class="metric-sub">人</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">今月の打刻数</div>
+        <div class="metric-value" id="metricMonth">0</div>
+        <div class="metric-sub">件</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">残業件数</div>
+        <div class="metric-value" id="metricOt">0</div>
+        <div class="metric-sub">件（今月）</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">打刻履歴</div>
+        <div class="filters">
+          <select id="filterName" onchange="renderAdmin()">
+            <option value="">全員</option>
+            <option>田中 太郎</option>
+            <option>佐藤 花子</option>
+            <option>鈴木 一郎</option>
+            <option>高橋 美咲</option>
+            <option>伊藤 健二</option>
+            <option>渡辺 さゆり</option>
+            <option>山本 大輔</option>
+            <option>中村 由美</option>
+            <option>小林 正志</option>
+            <option>加藤 れな</option>
+          </select>
+          <input type="date" id="filterDate" onchange="renderAdmin()" />
+          <button class="btn-excel" onclick="exportExcel()">Excel出力 ↓</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>氏名</th>
+            <th>日付</th>
+            <th>出勤</th>
+            <th>退勤</th>
+            <th>勤務時間</th>
+            <th>状態</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav" id="navBar" style="display:none;">
+  <button class="nav-btn active" id="navStaff" onclick="showStaff()">
+    <span class="nav-icon">🕐</span>
+    打刻
+  </button>
+  <button class="nav-btn" id="navAdmin" onclick="showAdminOrLogin()">
+    <span class="nav-icon">📊</span>
+    管理者
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, Timestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUnStZPFcC4x8kAVXNO2q3c2vrpUSZJoY",
+    authDomain: "sanai-timecard.firebaseapp.com",
+    projectId: "sanai-timecard",
+    storageBucket: "sanai-timecard.firebasestorage.app",
+    messagingSenderId: "500922683844",
+    appId: "1:500922683844:web:5a99e8da0a0e6056c49491"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const ADMIN_KEY = "admin2024";
+  let isAdminLoggedIn = false;
+  let allRecords = [];
+  let todayRecords = {};
+
+  function todayStr() {
+    return new Date().toLocaleDateString('ja-JP', {year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-');
+  }
+
+  function nowStr() {
+    return new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  }
+
+  function showToast(msg, type='') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 2500);
+  }
+
+  // Load today's records for the selected staff
+  async function loadTodayRecord(name) {
+    if (!name) return null;
+    const today = todayStr();
+    const q = query(
+      collection(db, 'punches'),
+      where('name', '==', name),
+      where('date', '==', today)
+    );
+    const snap = await getDocs(q);
+    const records = {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      if (d.type === 'in') records.in = d.time;
+      if (d.type === 'out') records.out = d.time;
+    });
+    return records;
+  }
+
+  window.onNameChange = async function() {
+    const name = document.getElementById('staffSelect').value;
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    const btnIn = document.getElementById('btnIn');
+    const btnOut = document.getElementById('btnOut');
+
+    document.getElementById('displayIn').textContent = '--:--';
+    document.getElementById('displayOut').textContent = '--:--';
+
+    if (!name) {
+      statusBar.className = 'status-bar status-wait';
+      statusText.textContent = '名前を選んでください';
+      btnIn.disabled = true;
+      btnOut.disabled = true;
+      return;
+    }
+
+    statusBar.className = 'status-bar status-wait';
+    statusText.textContent = '確認中...';
+    btnIn.disabled = true;
+    btnOut.disabled = true;
+
+    try {
+      const rec = await loadTodayRecord(name);
+      todayRecords = rec || {};
+
+      if (rec && rec.in) document.getElementById('displayIn').textContent = rec.in;
+      if (rec && rec.out) document.getElementById('displayOut').textContent = rec.out;
+
+      statusBar.className = 'status-bar status-ok';
+      statusText.textContent = '打刻可能';
+
+      btnIn.disabled = !!(rec && rec.in);
+      btnOut.disabled = !(rec && rec.in) || !!(rec && rec.out);
+    } catch(e) {
+      statusBar.className = 'status-bar status-ng';
+      statusText.textContent = 'エラーが発生しました';
+    }
+  };
+
+  window.punch = async function(type) {
+    const name = document.getElementById('staffSelect').value;
+    if (!name) { showToast('名前を選んでください', 'error'); return; }
+
+    const btnIn = document.getElementById('btnIn');
+    const btnOut = document.getElementById('btnOut');
+    btnIn.disabled = true;
+    btnOut.disabled = true;
+
+    const time = nowStr();
+    const date = todayStr();
+
+    try {
+      await addDoc(collection(db, 'punches'), {
+        name,
+        date,
+        time,
+        type,
+        timestamp: Timestamp.now()
+      });
+
+      if (type === 'in') {
+        document.getElementById('displayIn').textContent = time;
+        todayRecords.in = time;
+        showToast(`出勤打刻完了 ${time}`, 'success');
+        btnIn.disabled = true;
+        btnOut.disabled = false;
+      } else {
+        document.getElementById('displayOut').textContent = time;
+        todayRecords.out = time;
+        showToast(`退勤打刻完了 ${time}`, 'success');
+        btnOut.disabled = true;
+      }
+    } catch(e) {
+      showToast('保存に失敗しました', 'error');
+      btnIn.disabled = !todayRecords.in;
+      btnOut.disabled = !todayRecords.in || !!todayRecords.out;
+    }
+  };
+
+  window.adminLogin = function() {
+    const key = document.getElementById('adminKeyInput').value;
+    const err = document.getElementById('loginError');
+    if (key === ADMIN_KEY) {
+      isAdminLoggedIn = true;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminScreen').style.display = 'flex';
+      document.getElementById('navAdmin').classList.add('active');
+      document.getElementById('navStaff').classList.remove('active');
+      loadAdminData();
+    } else {
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 2000);
+    }
+  };
+
+  window.adminLogout = function() {
+    isAdminLoggedIn = false;
+    document.getElementById('adminScreen').style.display = 'none';
+    showStaff();
+  };
+
+  window.showStaff = function() {
+    document.getElementById('staffScreen').style.display = 'flex';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminScreen').style.display = 'none';
+    document.getElementById('navStaff').classList.add('active');
+    document.getElementById('navAdmin').classList.remove('active');
+  };
+
+  window.showAdminOrLogin = function() {
+    document.getElementById('staffScreen').style.display = 'none';
+    document.getElementById('navStaff').classList.remove('active');
+    document.getElementById('navAdmin').classList.add('active');
+    if (isAdminLoggedIn) {
+      document.getElementById('adminScreen').style.display = 'flex';
+      loadAdminData();
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+  };
+
+  async function loadAdminData() {
+    try {
+      const today = todayStr();
+      const currentMonth = today.substring(0, 7);
+
+      const snap = await getDocs(query(collection(db, 'punches'), orderBy('timestamp', 'desc')));
+      allRecords = [];
+      snap.forEach(doc => allRecords.push(doc.data()));
+
+      // metrics
+      const todayIns = new Set(allRecords.filter(r => r.date === today && r.type === 'in').map(r => r.name));
+      document.getElementById('metricToday').textContent = todayIns.size;
+
+      const monthRecords = allRecords.filter(r => r.date && r.date.startsWith(currentMonth));
+      document.getElementById('metricMonth').textContent = monthRecords.length;
+
+      // overtime: worked > 8h
+      const byDay = {};
+      monthRecords.forEach(r => {
+        const key = r.name + '_' + r.date;
+        if (!byDay[key]) byDay[key] = {};
+        byDay[key][r.type] = r.time;
+      });
+      let otCount = 0;
+      Object.values(byDay).forEach(d => {
+        if (d.in && d.out) {
+          const [ih,im] = d.in.split(':').map(Number);
+          const [oh,om] = d.out.split(':').map(Number);
+          const mins = (oh*60+om) - (ih*60+im);
+          if (mins > 8*60) otCount++;
+        }
+      });
+      document.getElementById('metricOt').textContent = otCount;
+
+      renderAdmin();
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  window.renderAdmin = function() {
+    const nameFilter = document.getElementById('filterName').value;
+    const dateFilter = document.getElementById('filterDate').value;
+
+    // Group by name+date
+    const grouped = {};
+    allRecords.forEach(r => {
+      if (nameFilter && r.name !== nameFilter) return;
+      if (dateFilter && r.date !== dateFilter) return;
+      const key = r.name + '_' + r.date;
+      if (!grouped[key]) grouped[key] = { name: r.name, date: r.date };
+      grouped[key][r.type] = r.time;
+    });
+
+    const rows = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
+    const tbody = document.getElementById('adminTableBody');
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">データがありません</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      let workTime = '—';
+      let otBadge = '';
+      if (r.in && r.out) {
+        const [ih,im] = r.in.split(':').map(Number);
+        const [oh,om] = r.out.split(':').map(Number);
+        const mins = (oh*60+om) - (ih*60+im);
+        const wh = Math.floor(mins/60);
+        const wm = mins%60;
+        workTime = `${wh}:${String(wm).padStart(2,'0')}`;
+        if (mins > 480) otBadge = '<span class="badge badge-ot">残業</span>';
+      }
+      const status = r.out
+        ? '<span class="badge badge-out">退勤済</span>'
+        : '<span class="badge badge-in">出勤中</span>';
+
+      return `<tr>
+        <td>${r.name}</td>
+        <td class="mono">${r.date || '—'}</td>
+        <td class="mono">${r.in || '—'}</td>
+        <td class="mono">${r.out || '—'}</td>
+        <td class="mono">${workTime} ${otBadge}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+  };
+
+  window.exportExcel = function() {
+    const nameFilter = document.getElementById('filterName').value;
+    const dateFilter = document.getElementById('filterDate').value;
+
+    const grouped = {};
+    allRecords.forEach(r => {
+      if (nameFilter && r.name !== nameFilter) return;
+      if (dateFilter && r.date !== dateFilter) return;
+      const key = r.name + '_' + r.date;
+      if (!grouped[key]) grouped[key] = { name: r.name, date: r.date };
+      grouped[key][r.type] = r.time;
+    });
+
+    const rows = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
+
+    let csv = '氏名,日付,出勤,退勤,勤務時間\n';
+    rows.forEach(r => {
+      let workTime = '';
+      if (r.in && r.out) {
+        const [ih,im] = r.in.split(':').map(Number);
+        const [oh,om] = r.out.split(':').map(Number);
+        const mins = (oh*60+om) - (ih*60+im);
+        workTime = `${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`;
+      }
+      csv += `${r.name},${r.date||''},${r.in||''},${r.out||''},${workTime}\n`;
+    });
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom+csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `タイムカード_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSVを出力しました', 'success');
+  };
+
+  // Init
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('staffScreen').style.display = 'flex';
+  document.getElementById('navBar').style.display = 'flex';
+
+  // Set today's date as default filter
+  document.getElementById('filterDate').value = todayStr();
+</script>
+</body>
+</html>
